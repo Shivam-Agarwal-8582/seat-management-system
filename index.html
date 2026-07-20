@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartSeat - Office Seat Booking System</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-mode">
+  
+  <!-- Time & Date Simulator Widget (Collapsed by default, floating in corner) -->
+  <div id="time-simulator" class="simulator-widget collapsed">
+    <div class="simulator-header" onclick="toggleSimulator()">
+      <div class="header-title">
+        <i data-lucide="sliders"></i>
+        <span>Time Simulator</span>
+      </div>
+      <span class="active-badge" id="sim-status-indicator">Week 1 • Mon 09:00 AM</span>
+      <i data-lucide="chevron-down" class="toggle-icon"></i>
+    </div>
+    <div class="simulator-body">
+      <div class="control-group">
+        <label for="sim-week">Simulation Week</label>
+        <select id="sim-week" onchange="updateSimulation()">
+          <option value="1">Week 1 (Batch 1 In-Office)</option>
+          <option value="2">Week 2 (Batch 2 In-Office)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="sim-day">Simulation Day</label>
+        <select id="sim-day" onchange="updateSimulation()">
+          <option value="1">Monday (Workday)</option>
+          <option value="2">Tuesday (Workday)</option>
+          <option value="3">Wednesday (Workday)</option>
+          <option value="4">Thursday (Workday)</option>
+          <option value="5">Friday (Workday)</option>
+          <option value="6">Saturday (Weekend)</option>
+          <option value="0">Sunday (Weekend)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="sim-hour">Simulation Time</label>
+        <div class="time-range-container">
+          <input type="range" id="sim-hour" min="0" max="23" value="9" oninput="updateSimulationHourLabel(this.value)" onchange="updateSimulation()">
+          <span class="time-label" id="sim-hour-label">09:00 AM</span>
+        </div>
+      </div>
+      <div class="simulator-info">
+        <div class="info-row">
+          <span>Active Batch:</span>
+          <strong id="info-active-batch">Batch 1 (Mon-Wed)</strong>
+        </div>
+        <div class="info-row">
+          <span>Floater Window:</span>
+          <span class="status-pill" id="info-floater-window">Closed</span>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-outline-primary w-full" onclick="resetSimulation()">
+        <i data-lucide="rotate-ccw"></i> Reset to Mon 9 AM
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- APP SHELL -->
+  <div id="app" class="app-layout hidden">
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon">
+          <i data-lucide="armchair"></i>
+        </div>
+        <div class="brand-text">
+          <h1>SmartSeat</h1>
+          <span>Seat Rotation Suite</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <!-- Common menu items -->
+        <a href="#" class="menu-item active" data-view="dashboard" onclick="switchView('dashboard')">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="menu-item" data-view="seating-plan" onclick="switchView('seating-plan')">
+          <i data-lucide="map"></i>
+          <span>Seating Plan</span>
+        </a>
+        
+        <!-- Employee specific menu items -->
+        <a href="#" class="menu-item employee-only" data-view="my-bookings" onclick="switchView('my-bookings')">
+          <i data-lucide="calendar-check"></i>
+          <span>My Bookings</span>
+        </a>
+
+        <!-- Admin specific menu items -->
+        <div class="menu-divider admin-only">ADMIN CONTROLS</div>
+        <a href="#" class="menu-item admin-only" data-view="admin-seats" onclick="switchView('admin-seats')">
+          <i data-lucide="shield-alert"></i>
+          <span>Seat Management</span>
+        </a>
+        <a href="#" class="menu-item admin-only" data-view="admin-employees" onclick="switchView('admin-employees')">
+          <i data-lucide="users"></i>
+          <span>Employees</span>
+        </a>
+        <a href="#" class="menu-item admin-only" data-view="admin-holidays" onclick="switchView('admin-holidays')">
+          <i data-lucide="party-popper"></i>
+          <span>Holiday Planner</span>
+        </a>
+        <a href="#" class="menu-item admin-only" data-view="admin-reports" onclick="switchView('admin-reports')">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Rotation Reports</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Footer (User Info & Logout) -->
+      <div class="sidebar-footer">
+        <div class="user-profile-summary">
+          <div class="user-avatar" id="sidebar-user-avatar">SA</div>
+          <div class="user-meta">
+            <span class="user-name" id="sidebar-user-name">SmartSeat Admin</span>
+            <span class="user-role-badge" id="sidebar-user-role">Administrator</span>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="logout()" title="Sign Out">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      <!-- Top Bar -->
+      <header class="app-header">
+        <div class="header-left">
+          <h2 id="view-title">Dashboard</h2>
+        </div>
+        <div class="header-right">
+          <!-- Quick Role Switcher widget in header -->
+          <div class="quick-switcher">
+            <span class="switcher-label">Act as:</span>
+            <select id="quick-role-select" onchange="quickSwitchUser(this.value)">
+              <!-- Options populated by JS -->
+            </select>
+          </div>
+          <!-- Theme Toggle -->
+          <button class="btn-icon-theme" onclick="toggleTheme()" title="Toggle Theme">
+            <i data-lucide="sun" class="sun-icon"></i>
+            <i data-lucide="moon" class="moon-icon"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Views Container -->
+      <div class="view-content">
+        
+        <!-- ======================================= -->
+        <!-- VIEW: EMPLOYEE DASHBOARD                 -->
+        <!-- ======================================= -->
+        <section id="view-dashboard" class="app-view active">
+          <!-- Dashboard Greeting Card -->
+          <div class="hero-card">
+            <div class="hero-bg-gradient"></div>
+            <div class="hero-content">
+              <h3 id="employee-welcome">Hello, Employee!</h3>
+              <p>Welcome back to the office rotation dashboard. Check your schedule and book floater seats below.</p>
+              <div class="user-badge-grid">
+                <div class="badge-item">
+                  <i data-lucide="users-2"></i>
+                  <div>
+                    <span class="label">Your Squad</span>
+                    <strong id="dash-squad">Squad A</strong>
+                  </div>
+                </div>
+                <div class="badge-item">
+                  <i data-lucide="calendar"></i>
+                  <div>
+                    <span class="label">Your Batch</span>
+                    <strong id="dash-batch">Batch 1 (Mon-Wed)</strong>
+                  </div>
+                </div>
+                <div class="badge-item">
+                  <i data-lucide="navigation"></i>
+                  <div>
+                    <span class="label">Designated Seat</span>
+                    <strong id="dash-seat">Desk D-01</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Grid -->
+          <div class="dashboard-grid">
+            
+            <!-- Weekly Attendance Schedule Card -->
+            <div class="card card-schedule">
+              <div class="card-header">
+                <h4 class="card-title"><i data-lucide="calendar-days"></i> Attendance Rotation Schedule</h4>
+                <span class="badge" id="schedule-week-badge">Week 1 (Mon-Wed)</span>
+              </div>
+              <div class="card-body">
+                <p class="description-text">Below is your attendance plan for this week. Green days require office attendance. Gray days are remote.</p>
+                <div class="weekly-schedule-grid" id="weekly-schedule-grid">
+                  <!-- Generated by JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Seat Booking Status Card -->
+            <div class="card card-seat-status">
+              <div class="card-header">
+                <h4 class="card-title"><i data-lucide="armchair"></i> Today's Desk Status</h4>
+              </div>
+              <div class="card-body">
+                <div id="seat-status-container">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Floater Seat Booking Controller -->
+            <div class="card card-floater-booking">
+              <div class="card-header">
+                <h4 class="card-title"><i data-lucide="rocket"></i> Next-Day Floater Booking</h4>
+                <span class="window-indicator" id="floater-status-badge">Window Closed</span>
+              </div>
+              <div class="card-body">
+                <div class="booking-checker-box">
+                  <div class="date-select-group">
+                    <label for="floater-booking-date">Target Date:</label>
+                    <select id="floater-booking-date" onchange="checkFloaterEligibility()">
+                      <!-- Populated by JS -->
+                    </select>
+                  </div>
+                  
+                  <div id="floater-eligibility-msg" class="alert-box alert-neutral mt-4">
+                    <!-- JS updates based on rule calculation -->
+                  </div>
+
+                  <div class="floater-actions mt-4">
+                    <button id="btn-proceed-floater" class="btn btn-primary w-full" disabled onclick="openFloaterSeatSelection()">
+                      <i data-lucide="mouse-pointer-click"></i> Select Floater Seat from Plan
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upcoming Visits Card -->
+            <div class="card card-visits">
+              <div class="card-header">
+                <h4 class="card-title"><i data-lucide="check-square"></i> Upcoming Bookings / Attendance</h4>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Seat</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dash-upcoming-bookings">
+                      <!-- Generated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ======================================= -->
+        <!-- VIEW: MY BOOKINGS                        -->
+        <!-- ======================================= -->
+        <section id="view-my-bookings" class="app-view">
+          <div class="card">
+            <div class="card-header justify-between">
+              <div>
+                <h3 class="card-title">Booking History & Active Requests</h3>
+                <p class="description-text">Manage your scheduled attendance and floater seats. You can cancel floater bookings anytime.</p>
+              </div>
+              <button class="btn btn-outline-primary" onclick="switchView('seating-plan')">
+                <i data-lucide="plus-circle"></i> New Booking
+              </button>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Booking Date</th>
+                      <th>Allocation Type</th>
+                      <th>Seat ID</th>
+                      <th>Status</th>
+                      <th>Lock Status (Redis)</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="my-bookings-list">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================= -->
+        <!-- VIEW: SEATING PLAN                       -->
+        <!-- ======================================= -->
+        <section id="view-seating-plan" class="app-view">
+          <div class="seating-plan-layout">
+            <!-- Left Side: Interactive Map & Filters -->
+            <div class="map-container-card card">
+              <div class="map-controls">
+                <div class="filters-left">
+                  <div class="search-input-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="seat-search" placeholder="Search employee..." oninput="filterSeatingPlan()">
+                  </div>
+                  <select id="seat-filter-squad" onchange="filterSeatingPlan()">
+                    <option value="all">All Squads</option>
+                    <option value="Squad A">Squad A</option>
+                    <option value="Squad B">Squad B</option>
+                    <option value="Squad C">Squad C</option>
+                    <option value="Squad D">Squad D</option>
+                    <option value="Squad E">Squad E</option>
+                  </select>
+                  <select id="seat-filter-type" onchange="filterSeatingPlan()">
+                    <option value="all">All Seat Types</option>
+                    <option value="designated">Designated Seats</option>
+                    <option value="floater">Floater Seats</option>
+                    <option value="blocked">Blocked Seats</option>
+                  </select>
+                </div>
+                
+                <div class="filters-right">
+                  <div class="date-context">
+                    <label for="plan-view-date">Plan for Date:</label>
+                    <input type="date" id="plan-view-date" onchange="onPlanDateChange()">
+                  </div>
+                  <button class="btn btn-sm btn-outline-secondary" onclick="simulateLiveRefresh()">
+                    <i data-lucide="refresh-cw" id="btn-refresh-icon"></i> Refresh Map
+                  </button>
+                </div>
+              </div>
+
+              <!-- Map View Area -->
+              <div class="map-canvas-container">
+                <!-- Seating Legend -->
+                <div class="map-legend">
+                  <div class="legend-item"><span class="legend-color designated-avail"></span><span>Designated (Available)</span></div>
+                  <div class="legend-item"><span class="legend-color designated-occ"></span><span>Designated (Occupied)</span></div>
+                  <div class="legend-item"><span class="legend-color floater-avail"></span><span>Floater (Available)</span></div>
+                  <div class="legend-item"><span class="legend-color floater-occ"></span><span>Floater (Booked)</span></div>
+                  <div class="legend-item"><span class="legend-color seat-blocked"></span><span>Blocked</span></div>
+                  <div class="legend-item"><span class="legend-color seat-your"></span><span>Your Desk</span></div>
+                </div>
+
+                <div class="map-wrapper">
+                  <div class="map-scroll-area">
+                    <!-- SVG Seating Plan -->
+                    <svg id="office-map-svg" viewBox="0 0 1000 650" width="100%" height="100%">
+                      <!-- Background walls and sections -->
+                      <rect x="10" y="10" width="980" height="630" rx="16" fill="var(--bg-card)" stroke="var(--border-color)" stroke-width="2"/>
+                      
+                      <!-- Office layout demarcations -->
+                      <line x1="500" y1="20" x2="500" y2="620" stroke="var(--border-color)" stroke-dasharray="8 8"/>
+                      <line x1="20" y1="320" x2="980" y2="320" stroke="var(--border-color)" stroke-dasharray="8 8"/>
+                      
+                      <!-- Meeting room spaces -->
+                      <g class="map-zone-label" transform="translate(100, 100)">
+                        <rect x="-80" y="-80" width="160" height="100" rx="8" fill="var(--bg-main)" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/>
+                        <text x="0" y="-30" text-anchor="middle" font-size="14" font-weight="600" fill="var(--text-secondary)">Boardroom</text>
+                      </g>
+                      <g class="map-zone-label" transform="translate(900, 100)">
+                        <rect x="-80" y="-80" width="160" height="100" rx="8" fill="var(--bg-main)" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/>
+                        <text x="0" y="-30" text-anchor="middle" font-size="14" font-weight="600" fill="var(--text-secondary)">Breakroom & Cafe</text>
+                      </g>
+                      
+                      <!-- Zone Markers -->
+                      <text x="250" y="50" text-anchor="middle" font-size="18" font-weight="700" fill="var(--text-secondary)" opacity="0.3">ZONE A (Squad A & B)</text>
+                      <text x="750" y="50" text-anchor="middle" font-size="18" font-weight="700" fill="var(--text-secondary)" opacity="0.3">ZONE B (Squad C & D)</text>
+                      <text x="250" y="590" text-anchor="middle" font-size="18" font-weight="700" fill="var(--text-secondary)" opacity="0.3">ZONE C (Squad E)</text>
+                      <text x="750" y="590" text-anchor="middle" font-size="18" font-weight="700" fill="var(--text-secondary)" opacity="0.3">ZONE D (Floater Desks)</text>
+                      
+                      <!-- Desks will be dynamically generated by JS -->
+                      <g id="svg-desks-group"></g>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Side: Selected Seat Details Inspector -->
+            <div class="seat-inspector-card card">
+              <div class="card-header">
+                <h4 class="card-title"><i data-lucide="info"></i> Desk Inspector</h4>
+              </div>
+              <div class="card-body" id="seat-inspector-body">
+                <div class="empty-inspector">
+                  <i data-lucide="mouse-pointer" class="large-icon"></i>
+                  <p>Click any desk on the floor map to view details, rotation assignments, or book it.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================= -->
+        <!-- VIEW: ADMIN KPI DASHBOARD & SEATS        -->
+        <!-- ======================================= -->
+        <section id="view-admin-seats" class="app-view">
+          <!-- Admin KPIs -->
+          <div class="admin-kpis-grid">
+            <div class="kpi-card">
+              <div class="kpi-icon color-blue">
+                <i data-lucide="armchair"></i>
+              </div>
+              <div class="kpi-meta">
+                <span class="label">Total Desks</span>
+                <h3 id="admin-kpi-total">50 Desks</h3>
+                <span class="trend font-xs text-secondary">40 Designated / 10 Floater</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon color-green">
+                <i data-lucide="check-circle-2"></i>
+              </div>
+              <div class="kpi-meta">
+                <span class="label">Occupied Today</span>
+                <h3 id="admin-kpi-occupied">24 Desks</h3>
+                <span class="trend font-xs text-success" id="admin-kpi-utilization">48% utilization</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon color-yellow">
+                <i data-lucide="activity"></i>
+              </div>
+              <div class="kpi-meta">
+                <span class="label">Floater Bookings</span>
+                <h3 id="admin-kpi-floaters">3 Booked</h3>
+                <span class="trend font-xs text-warning" id="admin-kpi-floaters-rate">30% capacity booked</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon color-red">
+                <i data-lucide="ban"></i>
+              </div>
+              <div class="kpi-meta">
+                <span class="label">Blocked Seats</span>
+                <h3 id="admin-kpi-blocked">2 Blocked</h3>
+                <span class="trend font-xs text-danger" id="admin-kpi-blocked-sub">For maintenance / spacing</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seat Management Section -->
+          <div class="card mt-6">
+            <div class="card-header justify-between">
+              <div>
+                <h3 class="card-title">Seat Inventory & Block Management</h3>
+                <p class="description-text">Review and modify seat templates, block seats permanently, or restrict availability for specific dates.</p>
+              </div>
+              <div class="header-actions">
+                <select id="admin-seat-filter-type" class="form-select form-select-sm" onchange="renderAdminSeats()">
+                  <option value="all">All Seats</option>
+                  <option value="designated">Designated Type</option>
+                  <option value="floater">Floater Type</option>
+                  <option value="blocked">Blocked Status (Active)</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="card-body p-0">
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Seat ID</th>
+                      <th>Type</th>
+                      <th>Squad Area</th>
+                      <th>Default Allocations</th>
+                      <th>Status (For Today)</th>
+                      <th>Block Restrictions</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-seats-table-body">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================= -->
+        <!-- VIEW: ADMIN EMPLOYEES                    -->
+        <!-- ======================================= -->
+        <section id="view-admin-employees" class="app-view">
+          <div class="card">
+            <div class="card-header justify-between">
+              <div>
+                <h3 class="card-title">Employee Roster</h3>
+                <p class="description-text">Manage employee status, rotate batches, assign squads, and view individual desk allocations.</p>
+              </div>
+              <div class="filter-actions flex gap-2">
+                <div class="search-input-wrapper">
+                  <i data-lucide="search" class="search-icon"></i>
+                  <input type="text" id="admin-employee-search" placeholder="Search by name or email..." oninput="renderAdminEmployees()">
+                </div>
+                <select id="admin-employee-filter-batch" onchange="renderAdminEmployees()">
+                  <option value="all">All Batches</option>
+                  <option value="1">Batch 1 (Mon-Wed)</option>
+                  <option value="2">Batch 2 (Thu-Fri)</option>
+                </select>
+                <select id="admin-employee-filter-squad" onchange="renderAdminEmployees()">
+                  <option value="all">All Squads</option>
+                  <option value="Squad A">Squad A</option>
+                  <option value="Squad B">Squad B</option>
+                  <option value="Squad C">Squad C</option>
+                  <option value="Squad D">Squad D</option>
+                  <option value="Squad E">Squad E</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="card-body p-0">
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Employee Info</th>
+                      <th>Squad</th>
+                      <th>Batch Rotation</th>
+                      <th>Designated Desk</th>
+                      <th>Account Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-employees-table-body">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================= -->
+        <!-- VIEW: ADMIN HOLIDAYS                     -->
+        <!-- ======================================= -->
+        <section id="view-admin-holidays" class="app-view">
+          <div class="admin-two-column-grid">
+            
+            <!-- Add Holiday Form -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title"><i data-lucide="calendar-plus"></i> Add New Company Holiday</h3>
+              </div>
+              <div class="card-body">
+                <p class="description-text mb-4">Adding a holiday prevents seat check-ins and automatically releases any floater bookings scheduled for that day.</p>
+                <form id="add-holiday-form" onsubmit="addCompanyHoliday(event)">
+                  <div class="form-group mb-4">
+                    <label for="holiday-name">Holiday Description</label>
+                    <input type="text" id="holiday-name" placeholder="e.g., Christmas Day, Summer Outing" required class="form-input">
+                  </div>
+                  <div class="form-group mb-4">
+                    <label for="holiday-date">Holiday Date</label>
+                    <input type="date" id="holiday-date" required class="form-input">
+                  </div>
+                  <button type="submit" class="btn btn-primary w-full">
+                    <i data-lucide="plus"></i> Register Holiday & Release Seats
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Holidays List -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title"><i data-lucide="party-popper"></i> Seeded & Custom Holidays</h3>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Holiday Name</th>
+                        <th>Impact</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-holidays-table-body">
+                      <!-- Populated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ======================================= -->
+        <!-- VIEW: ADMIN REPORTS                      -->
+        <!-- ======================================= -->
+        <section id="view-admin-reports" class="app-view">
+          <div class="reports-container">
+            <div class="report-header-controls card mb-6">
+              <div class="card-body flex-row justify-between items-center">
+                <div>
+                  <h3 class="card-title">Rotation-Aware Analytics & Compliance Reports</h3>
+                  <p class="description-text">Generate metrics on seating usage, squad compliance with designated assignments, and export logs.</p>
+                </div>
+                <button class="btn btn-primary" onclick="simulateExportCSV()">
+                  <i data-lucide="download"></i> Export Booking Ledger (CSV)
+                </button>
+              </div>
+            </div>
+
+            <div class="admin-two-column-grid">
+              <!-- Report Card 1: Utilization by Squad -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Average Attendance Rate by Squad</h3>
+                </div>
+                <div class="card-body">
+                  <div class="squad-reports-bars" id="reports-squad-bars">
+                    <!-- CSS bars injected here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Report Card 2: Batch Compliance -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Rotation Policy Compliance</h3>
+                </div>
+                <div class="card-body">
+                  <div class="compliance-circle-container">
+                    <div class="compliance-gauge">
+                      <svg viewBox="0 0 36 36" class="circular-chart green">
+                        <path class="circle-bg"
+                          d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path class="circle"
+                          stroke-dasharray="94, 100"
+                          d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <text x="18" y="20.35" class="percentage" id="reports-compliance-val">94%</text>
+                      </svg>
+                    </div>
+                    <div class="gauge-details">
+                      <h5>94% Batch Compliance</h5>
+                      <p class="description-text">Percentage of employees booking/checking in ONLY on their designated batch rotation days.</p>
+                      <ul class="compliance-bullets mt-2">
+                        <li><strong>Batch 1:</strong> 96% compliance</li>
+                        <li><strong>Batch 2:</strong> 92% compliance</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Seating Logs Card -->
+            <div class="card mt-6">
+              <div class="card-header">
+                <h3 class="card-title">Recent Activity Logs</h3>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>User</th>
+                        <th>Action Description</th>
+                        <th>Desk</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-reports-logs-body">
+                      <!-- Generated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- LOGIN CONTAINER -->
+  <div id="login-container" class="login-wrapper">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          <i data-lucide="armchair"></i>
+        </div>
+        <h2>SmartSeat Login</h2>
+        <p>Enter your credentials or click a quick tester account below.</p>
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group mb-4">
+          <label for="login-email">Email Address</label>
+          <div class="input-icon-group">
+            <i data-lucide="mail"></i>
+            <input type="email" id="login-email" required placeholder="name@smartseat.local" value="admin@smartseat.local">
+          </div>
+        </div>
+
+        <div class="form-group mb-6">
+          <label for="login-password">Password</label>
+          <div class="input-icon-group">
+            <i data-lucide="lock"></i>
+            <input type="password" id="login-password" required placeholder="••••••••" value="password123">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full">
+          Sign In <i data-lucide="arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="login-divider"><span>OR QUICK TEST LOGIN</span></div>
+      
+      <div class="quick-login-grid">
+        <button class="btn btn-sm btn-outline-secondary" onclick="quickLogin('admin@smartseat.local', 'password123')">
+          <i data-lucide="shield"></i> Admin Portal
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="quickLogin('employee001@smartseat.local', 'password')">
+          <i data-lucide="user"></i> Employee 1 (Batch 1)
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="quickLogin('employee041@smartseat.local', 'password')">
+          <i data-lucide="user"></i> Employee 41 (Batch 2)
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="quickLogin('employee012@smartseat.local', 'password')">
+          <i data-lucide="user"></i> Employee 12 (No Desk)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+
+  <!-- Modal: Seat Actions -->
+  <div id="modal-seat-actions" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h4 class="modal-title" id="modal-seat-title">Desk D-01 Details</h4>
+        <button class="btn-close" onclick="closeModal('modal-seat-actions')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="modal-seat-body">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Block Desk Form -->
+  <div id="modal-block-desk" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h4 class="modal-title">Configure Seat Blocks</h4>
+        <button class="btn-close" onclick="closeModal('modal-block-desk')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="block-seat-id">
+        <div class="form-group mb-4">
+          <label>Block Type</label>
+          <select id="block-type-select" class="form-select" onchange="toggleBlockTypeInputs(this.value)">
+            <option value="permanent">Permanently Blocked</option>
+            <option value="single-date">Block Specific Date</option>
+            <option value="date-range">Block Date Range</option>
+          </select>
+        </div>
+
+        <div id="block-single-date-group" class="form-group mb-4 hidden">
+          <label for="block-single-date">Date to Block</label>
+          <input type="date" id="block-single-date" class="form-input">
+        </div>
+
+        <div id="block-range-group" class="form-group mb-4 hidden">
+          <div class="grid grid-2 gap-2">
+            <div>
+              <label for="block-start-date">Start Date</label>
+              <input type="date" id="block-start-date" class="form-input">
+            </div>
+            <div>
+              <label for="block-end-date">End Date</label>
+              <input type="date" id="block-end-date" class="form-input">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group mb-6">
+          <label for="block-reason">Reason / Note</label>
+          <input type="text" id="block-reason" placeholder="e.g., Broken monitor, spacing buffer" class="form-input">
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-outline-secondary" onclick="closeModal('modal-block-desk')">Cancel</button>
+          <button class="btn btn-primary" onclick="submitBlockSeat()">Apply Block</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Core Script -->
+  <script src="app.js"></script>
+</body>
+</html>
