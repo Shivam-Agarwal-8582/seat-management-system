@@ -1,80 +1,454 @@
-# SmartSeat - Office Seat Booking System (HTML/CSS/JS Version)
+# 🪑 SmartSeat – Office Seat Booking & Workspace Management System
 
-Welcome to the client-side Single-Page Application (SPA) version of **SmartSeat**, a monolithic office seat booking system with batch-based attendance rotation, designated seat allocation, and floater seat booking.
+<div align="center">
 
-This application is built using standard **HTML5**, **Vanilla CSS3**, and **ES6 Javascript**, runs entirely in the browser, and utilizes `localStorage` for persistent states (no external databases, Java dependencies, or API backends required to run).
+![HTML](https://img.shields.io/badge/HTML-5-orange?style=for-the-badge&logo=html5)
+![CSS](https://img.shields.io/badge/CSS-3-blue?style=for-the-badge&logo=css3)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6-yellow?style=for-the-badge&logo=javascript)
+![Vercel](https://img.shields.io/badge/Deployment-Vercel-black?style=for-the-badge&logo=vercel)
 
----
+A modern **Office Seat Booking System** that simulates real-world hybrid workplace seat allocation, employee rotation, floater desk booking, admin management, analytics, and booking rules.
 
-## Features
-
-### 🕒 Time Simulator Widget (Collapsible Control Panel)
-To test complex scheduling window limitations easily (e.g., booking seats only after 3:00 PM), the page contains a floating control widget in the bottom-right corner:
-- **Simulation Week Switcher**: Toggle between Week 1 and Week 2 rotations.
-- **Simulation Day Switcher**: Test schedule outcomes for weekdays and weekends.
-- **Simulation Time Slider**: Adjust simulated hours in real-time (closes/opens the floater booking window).
-
-### 👥 Employee Portal
-- **Rotation Attendance Calendar**: Visualizes expected office presence (green days) vs remote working (gray days) according to active batch calendars.
-- **Designated Desk Status**: Check allocated desk status. Flags blocks and triggers warnings if the desk is unavailable.
-- **Floater Booking**: Interactive booking wizard that performs strict validation:
-  1. Opens after 3:00 PM for the next working day.
-  2. Restricts booking to the employee's designated office rotation days.
-  3. Displays responsive error prompts based on scheduling eligibility.
-- **Booking Concurrency Lock**: Simulates Redis distributed locking (e.g., `lock:seat:F-03:2026-07-21`) with animated delay checks to prevent double bookings.
-- **My Bookings Summary**: Review attendance ledger and cancel floater reservations anytime.
-- **Interactive SVG Office Map**: High-fidelity office blueprint displaying live occupancy metrics, desk types, and detailed hover/click popovers.
-
-### 🛡️ Administrator Portal
-- **Dashboard & KPIs**: High-level counters tracking occupied desks, utilization rates, floater bookings, and active blocks.
-- **Seat Inventory Management**: Register date blocks, date-range blocks, and convert desks between Designated and Floater allocations.
-- **Employee Roster**: Toggle user status (active/inactive), rotate batch groups, and manually map designated seating configurations.
-- **Holiday Planner**: Add company holidays which automatically perform cascading reservation releases on affected dates.
-- **Analytics & Reports**: Visual squad occupancy rates, compliance gauges, activity audit logs, and spreadsheet compilation (simulates a `.csv` report download).
+</div>
 
 ---
 
-## Seed Accounts & Access
+# 🌐 Live Demo
 
-A **Quick Role Switcher** is provided at the top-right header of the application to easily swap roles without typing credentials. 
+### 🚀 Production Deployment
 
-### Tester Logins
-- **Admin**: `admin@smartseat.local` / `password123`
-- **Employee 01 (Batch 1, Squad A)**: `employee001@smartseat.local` / `password`
-- **Employee 12 (Batch 1, No designated desk)**: `employee012@smartseat.local` / `password`
-- **Employee 41 (Batch 2, Squad A)**: `employee041@smartseat.local` / `password`
-- **Employee 75 (Batch 2, Squad E)**: `employee075@smartseat.local` / `password`
+**Primary URL**
 
----
+https://seat-management-system-zeta.vercel.app
 
-## Business Rules Implemented
-1. **50 seats total**: 40 designated (`D-01` to `D-40`) and 10 floater (`F-01` to `F-10`).
-2. **80 employees**: 5 squads (A, B, C, D, E), split into Batch 1 (1–40) and Batch 2 (41–80).
-3. **Weekly rotation**:
-   - **Week 1**: Batch 1 expected Mon-Wed; Batch 2 expected Thu-Fri.
-   - **Week 2**: Batch 1 expected Thu-Fri; Batch 2 expected Mon-Wed.
-4. **Pre-assigned Sharing**: Designated seat `D-x` is shared between Employee `x` (Batch 1) and Employee `x+40` (Batch 2).
-5. **Floater Window**: Eligible employees can book floaters starting at **3:00 PM** on the working day preceding their office rotation day.
-6. **Holiday Cascades**: Registering a company holiday automatically cancels all bookings on that day.
-7. **Deactivation Cascades**: Deactivating an employee profile automatically releases all upcoming seating reservations for that employee.
+**Vercel Deployment**
+
+https://seat-management-system-ldulx78cf-shivam-agarwal.vercel.app
 
 ---
 
-## How to Run Locally
+# 📖 Overview
 
-You can launch and interact with SmartSeat in two ways:
+SmartSeat is a responsive office workspace management system designed for companies following a **hybrid work model**.
 
-### Option A: Double-Click (Static File)
-Simply double-click the `index.html` file in your workspace to run it directly inside any modern web browser.
+The application provides:
 
-### Option B: Local Server (Recommended for Lucide/CDN asset loading reliability)
-If you have Node installed, you can spin up a lightweight local web server in the project directory:
+- Employee Dashboard
+- Office Seat Allocation
+- Hybrid Attendance Rotation
+- Floater Seat Booking
+- Admin Management Panel
+- Interactive Office Map
+- Reports & Analytics
+- Holiday Management
+- Booking Rules Simulation
+- Dark / Light Theme
+
+The project simulates how enterprise organizations manage office seating while preventing conflicts and improving workspace utilization.
+
+---
+
+# ✨ Features
+
+## 👨‍💼 Employee Module
+
+- Employee Dashboard
+- View assigned designated desk
+- View attendance schedule
+- Interactive seating plan
+- Book floater seats
+- Cancel bookings
+- Booking history
+- Upcoming office visits
+- Seat availability checking
+
+---
+
+## 👨‍💻 Admin Module
+
+- Manage Employees
+- Manage Seats
+- Block/Unblock Seats
+- Holiday Management
+- View Office Reports
+- Utilization Analytics
+- Booking Logs
+- Rotation Monitoring
+- Seat Allocation Control
+
+---
+
+## 🪑 Smart Seat Allocation
+
+Supports two types of desks:
+
+### Designated Seats
+
+Permanent assigned desks.
+
+### Floater Seats
+
+Shared desks that employees can reserve based on eligibility rules.
+
+---
+
+## 📅 Hybrid Attendance Rotation
+
+Supports office rotation such as
+
+Week 1
+
+- Batch 1 → Monday–Wednesday
+- Batch 2 → Thursday–Friday
+
+Week 2
+
+- Batch 2 → Monday–Wednesday
+- Batch 1 → Thursday–Friday
+
+---
+
+## ⏰ Time Simulation
+
+One of the major features of the project.
+
+Includes:
+
+- Week Simulation
+- Day Simulation
+- Time Simulation
+- Booking Window Simulation
+- Office Rotation Preview
+
+Perfect for demonstrating business logic.
+
+---
+
+## 🎯 Booking Rules
+
+The system validates bookings using multiple conditions.
+
+Examples:
+
+- Seat already booked
+- Seat blocked
+- Holiday
+- Weekend
+- Office rotation eligibility
+- Floater booking window
+- Duplicate booking prevention
+- Employee status validation
+
+---
+
+## 📊 Reports
+
+Admin dashboard includes:
+
+- Booking Logs
+- Office Utilization
+- Active Employees
+- Booking Statistics
+- Seat Availability
+- Attendance Overview
+
+---
+
+## 🌙 Theme Support
+
+- Dark Mode
+- Light Mode
+
+Theme preference is stored using Local Storage.
+
+---
+
+# 🏗️ Project Architecture
+
+```
+SmartSeat
+│
+├── Login
+│
+├── Employee Dashboard
+│      │
+│      ├── Attendance
+│      ├── Seat Status
+│      ├── Floater Booking
+│      ├── Booking History
+│      └── Seating Plan
+│
+├── Admin Dashboard
+│      │
+│      ├── Employee Management
+│      ├── Seat Management
+│      ├── Holiday Planner
+│      ├── Reports
+│      └── Logs
+│
+└── Local Storage Database
+```
+
+---
+
+# 🛠️ Tech Stack
+
+## Frontend
+
+- HTML5
+- CSS3
+- JavaScript (ES6)
+
+## UI
+
+- Lucide Icons
+- Google Fonts
+- Glassmorphism UI
+- Responsive Layout
+
+## Storage
+
+- LocalStorage
+
+## Deployment
+
+- Vercel
+
+---
+
+# 📁 Project Structure
+
+```
+SmartSeat/
+
+│── index.html
+│── styles.css
+│── script.js
+│── assets/
+│── README.md
+```
+
+---
+
+# 🚀 Getting Started
+
+## Clone Repository
 
 ```bash
-# Install serve globally (if not already installed)
-npm install -g serve
-
-# Run serve in the project root
-serve .
+git clone https://github.com/your-username/smartseat.git
 ```
-Then navigate to `http://localhost:3000` or the port displayed in your terminal.
+
+---
+
+## Open Project
+
+Simply open
+
+```
+index.html
+```
+
+or use VS Code Live Server.
+
+No installation required.
+
+---
+
+# 💻 Screens
+
+✔ Login
+
+✔ Dashboard
+
+✔ Seating Plan
+
+✔ Floater Booking
+
+✔ Booking History
+
+✔ Admin Dashboard
+
+✔ Employee Management
+
+✔ Seat Management
+
+✔ Holiday Planner
+
+✔ Reports
+
+---
+
+# 🔐 Simulated Authentication
+
+The application contains simulated login for demonstration purposes.
+
+Supports:
+
+- Administrator
+- Employee
+
+Authentication state is maintained using Local Storage.
+
+---
+
+# 💾 Data Persistence
+
+Application data is stored using Local Storage.
+
+Includes:
+
+- Employees
+- Seats
+- Bookings
+- Holidays
+- Reports
+- Theme
+- Session
+- Simulation State
+
+---
+
+# 📈 Business Logic
+
+The project simulates enterprise office rules including:
+
+- Hybrid attendance
+- Batch rotation
+- Desk allocation
+- Floater seat booking
+- Seat blocking
+- Holiday scheduling
+- Booking conflict prevention
+- Office utilization
+
+---
+
+# 🎨 UI Highlights
+
+- Modern Dashboard
+- Glassmorphism Cards
+- Interactive Seating Layout
+- Responsive Design
+- Dark Mode
+- Animated Components
+- Toast Notifications
+- Sidebar Navigation
+
+---
+
+# 📱 Responsive Design
+
+Supports
+
+- Desktop
+- Laptop
+- Tablet
+
+---
+
+# 🎯 Learning Outcomes
+
+Through this project I learned:
+
+- Complex business logic implementation
+- State management using Local Storage
+- DOM manipulation
+- Event-driven programming
+- Responsive UI Design
+- Office booking workflow
+- Hybrid workplace simulation
+- User role management
+
+---
+
+# 🔮 Future Enhancements
+
+- Spring Boot Backend
+- REST APIs
+- JWT Authentication
+- MySQL Database
+- Redis Distributed Locking
+- Email Notifications
+- QR Code Check-in
+- Real-time Seat Availability
+- WebSocket Support
+- Calendar Integration
+- AWS Deployment
+- Docker Support
+
+---
+
+# 📷 Screenshots
+
+> Add screenshots here after uploading images.
+
+```
+screenshots/
+
+dashboard.png
+
+employee-dashboard.png
+
+seat-booking.png
+
+admin-dashboard.png
+
+reports.png
+```
+
+---
+
+# ⭐ Why This Project?
+
+This project demonstrates:
+
+- Real-world business logic
+- Hybrid workplace management
+- Interactive UI development
+- Complex seat allocation algorithms
+- Admin & Employee workflows
+- Clean architecture
+- Responsive design
+- State management
+- Booking validation
+
+It is an excellent portfolio project for **Frontend Developer**, **JavaScript Developer**, **Full Stack Developer**, and **Software Engineer** interviews.
+
+---
+
+# 🚀 Deployment
+
+### Live Website
+
+https://seat-management-system-zeta.vercel.app
+
+### Vercel Deployment
+
+https://seat-management-system-ldulx78cf-shivam-agarwal.vercel.app
+
+---
+
+# 👨‍💻 Author
+
+**Shivam Agarwal**
+
+Computer Science Engineering Student
+
+Passionate about
+
+- Software Engineering
+- Full Stack Development
+- Java
+- Spring Boot
+- JavaScript
+- System Design
+
+---
+
+# 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## ⭐ If you like this project, consider giving it a Star on GitHub!
